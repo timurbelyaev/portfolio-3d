@@ -1,0 +1,23 @@
+{
+  "name": "portfolio-3d-temple",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "3D scroll-driven portfolio: descent from clouds to an ancient temple",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "serve -s dist -l ${PORT:-3000}",
+    "shoot": "node scripts/shoot.mjs dist .shots"
+  },
+  "dependencies": {
+    "lenis": "^1.1.14",
+    "three": "^0.169.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.61.1",
+    "serve": "^14.2.4",
+    "vite": "^5.4.10"
+  }
+}

@@ -1,0 +1,512 @@
+/* Hero: a painted gallery hall (photo) with a hole cut where the canvas of the
+   picture is; the live 3D world shows through it. Geometry comes from JS:
+   the hall's box, the hole mask and --u (one hero unit, 1% of a 16:9 width).
+   On scroll the whole hall scales into the hole (see overlay.js). */
+
+:root {
+  --hero-serif: "Lora", Georgia, serif;
+}
+
+#ui {
+  --u: 16px;
+}
+
+/* --- the hall ------------------------------------------------------------- */
+
+.hall {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  will-change: transform;
+}
+
+/* Behind the photo wherever it stops short of the screen (its edges are
+   faded by a mask from overlay.js): the same hall, blurred. Its own mask cuts
+   out the picture's opening (rectangle placed from JS), where the world shows. */
+.hall__haze {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #eedccb;
+  -webkit-mask-image: linear-gradient(#000, #000), linear-gradient(#000, #000);
+  mask-image: linear-gradient(#000, #000), linear-gradient(#000, #000);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.hall__haze-art {
+  position: absolute;
+  display: block;
+  max-width: none;
+  user-select: none;
+}
+
+.hall__art {
+  position: absolute;
+  display: block;
+  max-width: none;
+  user-select: none;
+}
+
+/* Museum plate and scroll cue under the frame. */
+.hall__plate {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: var(--heading);
+  text-decoration: none;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.hall__title {
+  font: italic 500 max(16px, calc(var(--s) * 24px)) / 1.15 var(--hero-serif);
+  white-space: nowrap;
+  color: var(--heading);
+}
+
+.hall__meta {
+  margin-top: 0.35em;
+  font: 400 max(11px, calc(var(--s) * 12px)) / 1.2 var(--sans);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+/* Reads as a button, not a caption: a framed label like the hero's CTA, with a
+   gold outline that keeps swelling away from it to invite the click. */
+.hall__cue {
+  position: relative;
+  margin-top: max(10px, calc(var(--s) * 16px));
+  padding: 0.5em 1.3em;
+  border: 1px solid rgba(var(--gold-line), 0.75);
+  border-radius: 2px;
+  background-color: rgba(255, 248, 240, 0.35);
+  font: 600 max(14px, calc(var(--s) * 18px)) / 1 var(--hero-serif);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  color: var(--heading);
+  transition: background-color 0.25s, border-color 0.25s, transform 0.1s;
+}
+
+.hall__cue::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid var(--antique-gold);
+  border-radius: 3px;
+  pointer-events: none;
+  animation: cue-ring 2.6s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+
+@keyframes cue-ring {
+  0% { transform: scale(1, 1); opacity: 0.8; }
+  70%, 100% { transform: scale(1.14, 1.5); opacity: 0; }
+}
+
+.hall__plate:hover .hall__cue {
+  background-color: rgba(255, 248, 240, 0.7);
+  border-color: var(--antique-gold);
+}
+
+.hall__plate:active .hall__cue {
+  transform: translateY(1px);
+}
+
+.hall__line {
+  position: relative;
+  display: block;
+  width: 1px;
+  height: max(22px, calc(var(--s) * 32px));
+  margin-top: 0.6em;
+  background: rgba(var(--plum-rgb), 0.14);
+  overflow: hidden;
+}
+
+.hall__line::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 45%;
+  background: var(--antique-gold);
+  animation: tick 2.4s cubic-bezier(0.6, 0, 0.4, 1) infinite;
+}
+
+@keyframes tick {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(200%); }
+}
+
+/* --- the copy --------------------------------------------------------------- */
+
+.hero {
+  position: absolute;
+  inset: 0;
+  color: var(--heading);
+  font-family: var(--hero-serif);
+  will-change: transform, opacity;
+}
+
+/* Light haze under the copy: evens out the light shafts behind the letters. */
+.hero__veil {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(var(--u) * 50);
+  height: 100%;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse calc(var(--u) * 34) calc(var(--u) * 30) at calc(var(--u) * 20) var(--veil-y, 50%),
+    rgba(247, 236, 228, 0.82) 0%,
+    rgba(247, 236, 228, 0.6) 50%,
+    rgba(247, 236, 228, 0) 100%
+  );
+}
+
+.hero__intro {
+  position: absolute;
+  left: calc(var(--u) * 6);
+  top: var(--intro-top, 20vh);
+  width: calc(var(--u) * 31);
+  display: flex;
+  flex-direction: column;
+  animation: intro-in 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) 0.5s both;
+}
+
+/* Held while the loader is up, so the entrance is seen. */
+.is-booting .hero__intro {
+  animation-play-state: paused;
+}
+
+@keyframes intro-in {
+  from { opacity: 0; transform: translateY(14px); }
+}
+
+/* Over the name: a live dot that answers "can I order now?". */
+.hero__status {
+  margin: calc(var(--u) * 1.05) 0 0;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.75);
+  font-size: max(14px, calc(var(--u) * 1.12));
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.hero__status i {
+  position: relative;
+  flex: none;
+  width: max(7px, calc(var(--u) * 0.55));
+  height: max(7px, calc(var(--u) * 0.55));
+  border-radius: 50%;
+  background: #2f8a52;
+}
+
+.hero__status i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: inherit;
+  animation: status-pulse 2.4s ease-out infinite;
+}
+
+@keyframes status-pulse {
+  from { transform: scale(1); opacity: 0.55; }
+  to { transform: scale(3); opacity: 0; }
+}
+
+.hero__rule {
+  width: calc(var(--u) * 7.5);
+  height: 1px;
+  margin-top: 0;
+  background: linear-gradient(90deg, var(--antique-gold), rgba(var(--gold-line), 0));
+}
+
+.hero__name {
+  margin: calc(var(--u) * 1) 0 0;
+  font-weight: 500;
+  font-size: calc(var(--u) * 7.6);
+  line-height: 0.92;
+  letter-spacing: -0.01em;
+  color: var(--heading);
+}
+
+.hero__name span {
+  background: linear-gradient(180deg, var(--deep-plum) 10%, var(--button) 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero__role {
+  margin: calc(var(--u) * 1.4) 0 0;
+  font-size: max(15px, calc(var(--u) * 1.3));
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--button);
+}
+
+.hero__lead {
+  margin: calc(var(--u) * 2) 0 0;
+  max-width: calc(var(--u) * 30);
+  font-size: max(17px, calc(var(--u) * 1.66));
+  font-weight: 500;
+  line-height: 1.32;
+  color: var(--heading);
+  text-wrap: pretty;
+}
+
+.hero__actions {
+  margin-top: calc(var(--u) * 2.4);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--u) * 1.8);
+}
+
+.hero.is-live .hero__actions {
+  pointer-events: auto;
+}
+
+.hero__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  height: calc(var(--u) * 3.7);
+  padding: 0 calc(var(--u) * 2.5);
+  border: 1px solid var(--heading);
+  border-radius: 2px;
+  background-color: transparent;
+  font: 600 clamp(14px, calc(var(--u) * 1.3), 21px) / 1 var(--hero-serif);
+  letter-spacing: 0.01em;
+  color: var(--heading);
+  text-decoration: none;
+  transition: background-color 0.2s, border-color 0.2s, transform 0.1s;
+}
+
+.hero__btn:hover {
+  background-color: rgba(var(--plum-rgb), 0.07);
+  border-color: var(--heading);
+  color: var(--heading);
+}
+
+.hero__btn:active {
+  transform: translateY(1px);
+}
+
+.hero__link {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  cursor: pointer;
+  font: 600 clamp(14px, calc(var(--u) * 1.3), 21px) / 1.2 var(--hero-serif);
+  color: var(--heading);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+  text-decoration-color: rgba(var(--gold-line), 0.55);
+  transition: text-decoration-color 0.2s, color 0.2s;
+}
+
+.hero__link:hover {
+  text-decoration-color: var(--heading);
+  color: var(--deep-plum);
+}
+
+.hero__btn:focus-visible,
+.hero__link:focus-visible,
+.hall__plate:focus-visible {
+  outline: 2px solid var(--button-hover);
+  outline-offset: 4px;
+}
+
+/* Three facts between laurel sprigs, starting flush with the copy's left edge. */
+.hero__facts {
+  --fact-gap: calc(var(--u) * 1.4);
+  margin: calc(var(--u) * 2.6) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+}
+
+.hero__facts li {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.55);
+}
+
+.hero__facts li + li {
+  margin-left: var(--fact-gap);
+  padding-left: var(--fact-gap);
+  border-left: 1px solid rgba(var(--gold-line), 0.3);
+}
+
+.hero__facts span {
+  text-align: center;
+  font-size: max(13px, calc(var(--u) * 1.08));
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  color: var(--heading);
+}
+
+.laurel {
+  width: max(9px, calc(var(--u) * 0.9));
+  height: max(26px, calc(var(--u) * 2.6));
+  flex: none;
+}
+
+.laurel--r {
+  transform: scaleX(-1);
+}
+
+/* --- narrower screens: copy centred on top, the painting below ------------ */
+
+/* Lifts the copy off the blurred hall. */
+.hero.is-stacked .hero__veil {
+  width: 100%;
+  background: radial-gradient(
+    ellipse min(46rem, 70vw) 34% at 50% var(--veil-y, 30%),
+    rgba(247, 236, 228, 0.7) 0%,
+    rgba(247, 236, 228, 0.4) 55%,
+    rgba(247, 236, 228, 0) 100%
+  );
+}
+
+.hero.is-stacked .hero__intro {
+  left: 6vw;
+  right: 6vw;
+  width: auto;
+  max-width: 34rem;
+  margin: 0 auto;
+  align-items: center;
+  text-align: center;
+}
+
+.hero.is-roomy .hero__intro {
+  max-width: 46rem;
+}
+
+.hero.is-stacked .hero__status {
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  font-size: 14px;
+}
+
+.hero.is-stacked .hero__name {
+  margin-top: 0.6rem;
+  font-size: clamp(2.7rem, 10vw, 5rem);
+}
+
+/* Wide enough for the name on one line. */
+.hero.is-roomy .hero__name {
+  font-size: clamp(3.4rem, 7.4vw, 5.6rem);
+}
+
+.hero.is-roomy .hero__name br {
+  display: none;
+}
+
+.hero.is-roomy .hero__name span::before {
+  content: " ";
+}
+
+.hero.is-stacked .hero__role {
+  margin-top: 0.7rem;
+}
+
+.hero.is-stacked .hero__lead {
+  margin-top: 0.8rem;
+  max-width: none;
+  font-size: clamp(1rem, 4.4vw, 1.4rem);
+}
+
+.hero.is-stacked .hero__actions {
+  margin-top: 1.1rem;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.hero.is-stacked .hero__btn {
+  height: 46px;
+  min-height: 46px;
+  padding: 0 1rem;
+  white-space: nowrap;
+}
+
+.hero.is-stacked .hero__btn,
+.hero.is-stacked .hero__link {
+  font-size: 16px;
+}
+
+.hero.is-stacked .hero__link {
+  white-space: nowrap;
+}
+
+.hero.is-stacked .hero__facts {
+  --fact-gap: clamp(0.5rem, 2.4vw, 1.1rem);
+  justify-content: center;
+  margin-top: 1.1rem;
+}
+
+.hero.is-stacked .hero__facts span {
+  font-size: 12.5px;
+}
+
+.hero.is-stacked .laurel {
+  width: 8px;
+  height: 24px;
+}
+
+/* Phones: the frame takes the lower half; keep only what fits above it. */
+@media (max-height: 920px) and (max-aspect-ratio: 23/20) {
+  .hero.is-stacked .hero__name {
+    font-size: clamp(2.5rem, 12vw, 4rem);
+  }
+
+  .hero.is-stacked .hero__rule {
+    display: none;
+  }
+
+  .hero.is-stacked .hero__name {
+    margin-top: 0.5rem;
+  }
+}
+
+@media (max-height: 780px) and (max-aspect-ratio: 23/20) {
+  .hero.is-stacked .hero__lead,
+  .hero.is-stacked .hero__facts {
+    display: none;
+  }
+}
+
+@media (max-width: 1080px) {
+  .top__brand::after {
+    display: none;
+  }
+
+  .top .top__menu {
+    font: 500 1rem/1 var(--hero-serif);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hall__line::after,
+  .hall__cue::after,
+  .hero__status i::after,
+  .hero__intro {
+    animation: none;
+  }
+}

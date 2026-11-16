@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Тимур Беляев, разработчик</title>
+    <meta
+      name="description"
+      content="Telegram-боты, AI-консультанты, сайты и автоматизация. Решения, которые экономят часы сотрудников и приносят деньги бизнесу."
+    />
+    <link rel="icon" type="image/png" href="ui/favicon.png" />
+    <link rel="preload" as="image" href="ui/cloud-bank-a.webp" />
+    <link rel="preload" as="image" href="ui/cloud-bank-b.webp" />
+    <link rel="preload" as="image" href="ui/logo.webp" />
+    <link rel="preload" as="image" href="hero/hall.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Golos+Text:wght@400;500;600;700&family=Forum&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Curtain styles are inline: the loader has to paint before the bundle
+         (three.js) arrives. Driven by src/ui/curtain.js afterwards. -->
+    <style>
+      html, body { margin: 0; background: #dcc6bd; }
+      .curtain {
+        --w: max(80vw, 60vh);
+        --ease-in: cubic-bezier(0.65, 0, 0.35, 1);
+        --p: 0;
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      .curtain.is-closed { pointer-events: auto; }
+      /* Solid fill only while loading: covers the moment before the cloud
+         texture decodes. */
+      .curtain.is-loading { background: #dcc6bd; }
+      .curtain__bank {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: var(--w);
+        will-change: transform;
+        transition: transform 1.15s var(--ease-in);
+      }
+      .curtain__bank::before {
+        content: "";
+        position: absolute;
+        inset: -2% 0;
+        /* Baked from the scene's own volumetric clouds (scripts/bake-curtain.mjs);
+           1:2, so at 100% width it always overfills the bank's height. Two
+           bakes, crossed between the layers, so the closed curtain is not a
+           mirror image. */
+        background: url("ui/cloud-bank-a.webp") 0 50% / 100% auto no-repeat;
+      }
+      /* Closed: the solid body of each bank reaches just past the middle, so
+         the two puffy fronts interleave. Open: pushed fully off screen, a
+         little enlarged as if flown through. */
+      .curtain__bank--l { left: calc(50vw + var(--w) * 0.24 - var(--w)); transform-origin: 100% 50%; transform: translateX(-100%) scale(1.25); }
+      .curtain__bank--r { right: calc(50vw + var(--w) * 0.24 - var(--w)); transform-origin: 0 50%; transform: translateX(100%) scale(1.25); }
+      .curtain__bank--r::before { transform: scaleX(-1); background-image: url("ui/cloud-bank-b.webp"); }
+      .curtain__bank--back { filter: brightness(0.95); }
+      .curtain__bank--back.curtain__bank--l { left: calc(50vw + var(--w) * 0.3 - var(--w)); }
+      .curtain__bank--back.curtain__bank--r { right: calc(50vw + var(--w) * 0.3 - var(--w)); }
+      /* Upright clouds: the back layers are never flipped vertically, only offset. */
+      .curtain__bank--back::before { background-position: 0 30%; }
+      .curtain__bank--back.curtain__bank--l::before { background-image: url("ui/cloud-bank-b.webp"); }
+      .curtain__bank--back.curtain__bank--r::before { transform: scaleX(-1); background-image: url("ui/cloud-bank-a.webp"); }
+      .curtain.is-closed .curtain__bank { transform: none; transition-duration: 0.95s; }
+      /* Depth: the back banks lead when closing and trail when opening. */
+      .curtain.is-closed .curtain__bank:not(.curtain__bank--back) { transition-delay: 0.1s; }
+      .curtain:not(.is-closed) .curtain__bank--back { transition-delay: 0.14s; transition-duration: 1.35s; }
+      .curtain.is-loading .curtain__bank::before { animation: curtain-drift 24s ease-in-out infinite alternate; }
+      .curtain.is-loading .curtain__bank--back::before { animation-duration: 31s; animation-direction: alternate-reverse; }
+      /* Percent positions stay inside the image, so the drift never shows its end. */
+      @keyframes curtain-drift { from { background-position-y: 25%; } to { background-position-y: 75%; } }
+
+      .curtain__center {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 22px;
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+        transition: opacity 0.45s ease, transform 0.6s var(--ease-in);
+      }
+      /* A soft halo hugging the monogram and the lettering keeps the gold
+         readable over the clouds' shaded lavender, without a lit patch. */
+      /* On the wrapper: the fill image is clipped, which would cut a halo on it into a box. */
+      .curtain__logo { filter: drop-shadow(0 0 10px rgba(255, 246, 234, 0.9)) drop-shadow(0 0 26px rgba(255, 240, 226, 0.6)); }
+      .curtain__meta, .curtain__title { text-shadow: 0 0 12px rgba(255, 246, 234, 0.95), 0 0 28px rgba(255, 240, 226, 0.7); }
+      .curtain.is-titled .curtain__center { opacity: 1; transform: none; transition-delay: 0.7s, 0.7s; }
+      .curtain__logo {
+        position: relative;
+        width: min(34vw, 190px);
+        aspect-ratio: 768 / 729;
+      }
+      .curtain__logo img { position: absolute; inset: 0; width: 100%; height: 100%; }
+      .curtain__ghost { opacity: 0.16; filter: grayscale(1); }
+      /* Gold rises through the monogram with the load progress. */
+      .curtain__fill { clip-path: inset(calc((1 - var(--p)) * 100%) 0 0 0); transition: clip-path 0.35s ease-out; }
+      .curtain__logo::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(105deg, transparent 42%, rgba(255, 250, 235, 0.75) 50%, transparent 58%) 0 0 / 300% 100% no-repeat;
+        -webkit-mask: url("ui/logo.webp") center / contain no-repeat;
+        mask: url("ui/logo.webp") center / contain no-repeat;
+        animation: curtain-shine 2.8s ease-in-out infinite;
+      }
+      @keyframes curtain-shine { from { background-position: 100% 0; } to { background-position: 0 0; } }
+      .curtain__meta {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font: 500 12px/1 'Golos Text', system-ui, sans-serif;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: #8a6440;
+      }
+      .curtain__meta::before,
+      .curtain__meta::after { content: ""; width: 34px; height: 1px; background: currentColor; opacity: 0.45; }
+      .curtain__count { font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: right; }
+      /* Travel card: the chapter name instead of the progress line. */
+      .curtain__title {
+        display: none;
+        margin: 0;
+        font: italic 500 clamp(30px, 4.4vw, 54px)/1.1 'Lora', Georgia, serif;
+        color: #5b3f26;
+      }
+      .curtain.is-travel .curtain__logo { width: min(18vw, 84px); }
+      .curtain.is-travel .curtain__meta { display: none; }
+      .curtain.is-travel .curtain__title { display: block; }
+      .curtain.is-travel .curtain__logo::after { animation: none; }
+      @media (prefers-reduced-motion: reduce) {
+        .curtain__bank { transform: none !important; opacity: 0; transition: opacity 0.5s !important; }
+        .curtain.is-closed .curtain__bank { opacity: 1; }
+        .curtain .curtain__bank::before, .curtain__logo::after { animation: none !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Full-viewport WebGL canvas (fixed). The scene is rendered here. -->
+    <canvas id="scene"></canvas>
+
+    <!-- 2D layer over the scene: hero mask, text beats, nav, detail sheet. -->
+    <div id="ui"></div>
+
+    <!-- Scroll spacer: its height (set in JS from the block count) creates the
+         scrollable page length that drives the camera along the curve. -->
+    <div id="scroll-space"></div>
+
+    <!-- Cloud curtain: the loader on arrival, then the cut between chapters. -->
+    <div id="curtain" class="curtain is-closed is-loading is-titled" aria-hidden="true">
+      <div class="curtain__bank curtain__bank--l curtain__bank--back"></div>
+      <div class="curtain__bank curtain__bank--r curtain__bank--back"></div>
+      <div class="curtain__bank curtain__bank--l"></div>
+      <div class="curtain__bank curtain__bank--r"></div>
+      <div class="curtain__center">
+        <div class="curtain__logo">
+          <img class="curtain__ghost" src="ui/logo.webp" alt="" />
+          <img class="curtain__fill" src="ui/logo.webp" alt="" />
+        </div>
+        <div class="curtain__meta"><span>Загрузка полёта</span><span class="curtain__count">0%</span></div>
+        <p class="curtain__title"></p>
+      </div>
+    </div>
+
+    <!-- Progress creeps on its own until the app reports real loading; the
+         bundle takes over via window.__curtainLoad. -->
+    <script>
+      ;(function () {
+        document.documentElement.classList.add('is-booting')
+        var el = document.getElementById('curtain')
+        var count = el.querySelector('.curtain__count')
+        var shown = 0
+        var real = 0
+        var done = false
+        function step() {
+          // Creep toward 60% while nothing is known; real progress fills the rest.
+          var target = done ? 1 : Math.max(0.6 * (1 - Math.exp(-performance.now() / 2500)), 0.25 + real * 0.7)
+          shown += (target - shown) * (done ? 0.18 : 0.05)
+          if (done && shown > 0.995) shown = 1
+          el.style.setProperty('--p', shown.toFixed(4))
+          count.textContent = Math.round(shown * 100) + '%'
+          if (shown < 1) requestAnimationFrame(step)
+          else if (window.__curtainFull) window.__curtainFull()
+        }
+        window.__curtainLoad = {
+          progress: function (v) { real = Math.max(real, v) },
+          finish: function () { done = true },
+          get full() { return shown >= 1 },
+        }
+        requestAnimationFrame(step)
+      })()
+    </script>
+
+    <script type="module" src="/src/app.js"></script>
+  </body>
+</html>

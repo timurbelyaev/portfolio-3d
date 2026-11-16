@@ -1,0 +1,23 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.env
+.env.local
+.vite/
+CLAUDE.local.md
+
+.shots/
+
+# Download staging for models (zip + originals). Working .glb live in public/models/.
+/models/
+
+# Local-only: agent instructions, specs, planning docs, scratch images.
+CLAUDE.md
+.claude/
+PRD-*.md
+openspec/
+models-blueprint.html
+/photo_*.jpg
+# Third-party models used only by the retired v1 build.
+public/models/
